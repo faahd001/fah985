@@ -1,0 +1,124 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile, can be an Engineer or Customer",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string", "description": "Profile picture URL" },
+        "role": { "type": "string", "enum": ["customer", "engineer", "admin"] },
+        "createdAt": { "type": "number", "description": "Timestamp" },
+        "bio": { "type": "string" },
+        
+        "location": { "type": "string" },
+        "title": { "type": "string", "description": "Job title for engineers (e.g., Electrician, Web Developer)" },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "experience": { "type": "string" },
+        "hourlyRate": { "type": "number" },
+        "isApproved": { "type": "boolean", "description": "Only engineers need approval" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "A job request/booking between customer and engineer",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "engineerId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected", "completed"] },
+        "description": { "type": "string", "description": "Description of the job" },
+        "location": { "type": "string" },
+        "date": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["customerId", "engineerId", "status", "description"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat messages between customer and engineer",
+      "type": "object",
+      "properties": {
+        "bookingId": { "type": "string", "description": "Context of the chat (optional, or we group by booking)" },
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["senderId", "receiverId", "text", "createdAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Review left by a customer for an engineer",
+      "type": "object",
+      "properties": {
+        "bookingId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "engineerId": { "type": "string" },
+        "rating": { "type": "number", "description": "1 to 5" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["bookingId", "customerId", "engineerId", "rating"]
+    },
+    "Job": {
+      "title": "Job",
+      "description": "A public job posting created by a customer",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "requiredSkills": { "type": "array", "items": { "type": "string" } },
+        "location": { "type": "string" },
+        "budget": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "closed"] },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["customerId", "title", "description", "status"]
+    },
+    "Proposal": {
+      "title": "Proposal",
+      "description": "A proposal or application from an engineer for a specific job",
+      "type": "object",
+      "properties": {
+        "jobId": { "type": "string" },
+        "engineerId": { "type": "string" },
+        "coverLetter": { "type": "string" },
+        "proposedRate": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["jobId", "engineerId", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Job bookings"
+    },
+    "/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Messages"
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Reviews"
+    },
+    "/jobs/{jobId}": {
+      "schema": { "$ref": "#/entities/Job" },
+      "description": "Public job postings"
+    },
+    "/proposals/{proposalId}": {
+      "schema": { "$ref": "#/entities/Proposal" },
+      "description": "Proposals to jobs by engineers"
+    }
+  }
+}

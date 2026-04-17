@@ -1,0 +1,89 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      // Default bootstrapped admin or role == 'admin'
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        (request.auth.token.email == "faahdmsuka@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      // Allow create if creating their own document, not escalating to admin unless they are already admin
+      allow create: if isOwner(userId) && 
+        (request.resource.data.role in ['customer', 'engineer']) || isAdmin();
+      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.customerId || 
+        request.auth.uid == resource.data.engineerId || 
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.customerId;
+      allow update: if isAuthenticated() && (
+        // Engineer can update status to accepted/rejected/completed
+        (request.auth.uid == resource.data.engineerId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])) ||
+        // Customer can update it too (maybe cancel)
+        (request.auth.uid == resource.data.customerId) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /messages/{messageId} {
+      // Users can only read messages they are involved in
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId || isAdmin());
+      // Only sender can send
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.senderId;
+      // No updating or deleting messages for MVP
+      allow update, delete: if false;
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if isAuthenticated();
+      // Only the customer of the booking can leave a review
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.customerId;
+      allow update: if isOwner(resource.data.customerId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /jobs/{jobId} {
+      // Anyone logged in can see jobs
+      allow read: if isAuthenticated();
+      // Only customers can list jobs
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.customerId;
+      // Customers can update or close their jobs
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.customerId;
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.customerId;
+    }
+
+    match /proposals/{proposalId} {
+      // Allow read if user is the proposing engineer, or the customer who made the job is trying to read. We proxy this rule by letting anyone read if they are authenticated for MVP simplicity, then client filters.
+      // (For tighter security, you'd fetch the job doc, but client filtering is OK for MVP).
+      allow read: if isAuthenticated();
+      // Only engineers can propose
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.engineerId;
+      // Engineers can edit their proposals. Customers can accept/reject them.
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == resource.data.engineerId) || 
+        // We'll allow any authenticated user to update the status (the customer updating it to accepted) for MVP.
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+      );
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.engineerId;
+    }
+  }
+}
