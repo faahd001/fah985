@@ -12,8 +12,12 @@ const Navbar = () => {
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      if (e.code === 'auth/cancelled-popup-request' || e.code === 'auth/popup-closed-by-user') {
+        console.log('Login popup ignored or closed by user.');
+      } else {
+        console.error('Login error:', e);
+      }
     }
   };
 
@@ -27,7 +31,7 @@ const Navbar = () => {
       <div className="w-full h-full px-10 flex items-center justify-between mx-auto">
         <div className="flex items-center">
           <Link to="/" className="flex-shrink-0 flex items-center text-primary text-2xl font-extrabold tracking-tight">
-            Connect<span className="text-[#0f172a]">Pro</span>
+            Pro<span className="text-[#0f172a]">Finder</span>
           </Link>
           <div className="hidden sm:ml-12 sm:flex sm:space-x-8">
             <Link to="/engineers" className="text-[#64748b] hover:text-primary inline-flex items-center text-sm font-medium transition-colors">Discover Engineers</Link>
@@ -58,7 +62,7 @@ const Navbar = () => {
                 Login
               </button>
               <button onClick={handleLogin} className="geo-btn bg-primary text-white hover:bg-primary-dark">
-                Join ConnectPro
+                Join ProFinder
               </button>
             </>
           )}
@@ -76,7 +80,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
         {children}
       </main>
       <footer className="bg-white border-t border-gray-100 py-8 text-center text-gray-400 text-sm">
-        <p>&copy; {new Date().getFullYear()} ConnectPro. Connecting Skills to Solutions.</p>
+        <p>&copy; {new Date().getFullYear()} ProFinder. Connecting Skills to Solutions.</p>
       </footer>
     </div>
   );

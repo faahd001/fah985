@@ -13,7 +13,7 @@ export default function Home() {
           </h1>
           <p className="text-base opacity-90 z-10 max-w-lg">
             Find the world's most talented engineers for your next project. 
-            ConnectPro bridges the gap between customers and highly functional technical experts.
+            ProFinder bridges the gap between customers and highly functional technical experts.
           </p>
           <div className="flex gap-4 mt-6 z-10">
             <Link to="/engineers" className="geo-btn bg-white text-primary hover:bg-gray-50 border-none">
@@ -29,7 +29,7 @@ export default function Home() {
       {/* Features Section styling updated to Geometric Balance */}
       <section className="px-10 pb-20">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-[20px] font-bold text-[#0f172a]">Why choose ConnectPro?</h3>
+          <h3 className="text-[20px] font-bold text-[#0f172a]">Why choose ProFinder?</h3>
           <Link to="/about" className="text-sm font-semibold text-primary decoration-transparent hover:underline hover:underline-offset-4">Learn More &rarr;</Link>
         </div>
         

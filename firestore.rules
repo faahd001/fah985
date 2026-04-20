@@ -19,7 +19,7 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       // Allow create if creating their own document, not escalating to admin unless they are already admin
       allow create: if isOwner(userId) && 
         (request.resource.data.role in ['customer', 'engineer']) || isAdmin();
@@ -62,8 +62,8 @@ service cloud.firestore {
     }
 
     match /jobs/{jobId} {
-      // Anyone logged in can see jobs
-      allow read: if isAuthenticated();
+      // Anyone can see jobs
+      allow read: if true;
       // Only customers can list jobs
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.customerId;
       // Customers can update or close their jobs

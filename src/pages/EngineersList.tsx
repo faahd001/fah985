@@ -88,7 +88,7 @@ export default function EngineersList() {
         <div className="mt-auto">
           <div className="geo-card !bg-[#f8fafc] !border-none p-5">
             <p className="text-[12px] text-[#64748b] leading-relaxed">
-              <strong>ConnectPro</strong> is the leading workspace for engineering solutions. Need help? <a href="#" className="text-primary hover:underline">Contact Support</a>
+              <strong>ProFinder</strong> is the leading workspace for engineering solutions. Need help? <a href="#" className="text-primary hover:underline">Contact Support</a>
             </p>
           </div>
         </div>
