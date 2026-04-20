@@ -11,6 +11,9 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
+  "overrides": {
+    "node-domexception": "npm:domexception@^4.0.0"
+  },
   "dependencies": {
     "@google/genai": "^1.29.0",
     "@radix-ui/react-avatar": "^1.1.11",
