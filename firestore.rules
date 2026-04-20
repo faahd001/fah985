@@ -54,7 +54,7 @@ service cloud.firestore {
     }
 
     match /reviews/{reviewId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       // Only the customer of the booking can leave a review
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.customerId;
       allow update: if isOwner(resource.data.customerId) || isAdmin();

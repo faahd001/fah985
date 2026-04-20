@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { User, Settings, Calendar, MessageSquare, Edit } from 'lucide-react';
 import Chat from './Chat';
 
@@ -70,6 +70,9 @@ export default function Dashboard() {
 
 function Overview({ role, uid }: { role: string, uid: string }) {
   const [bookings, setBookings] = useState<any[]>([]);
+  const [reviewingBooking, setReviewingBooking] = useState<any>(null);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     const field = role === 'engineer' ? 'engineerId' : 'customerId';
@@ -88,6 +91,31 @@ function Overview({ role, uid }: { role: string, uid: string }) {
     } catch (e) {
       console.error(e);
       alert("Failed to update");
+    }
+  };
+
+  const submitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewingBooking) return;
+    setSubmittingReview(true);
+    try {
+      await addDoc(collection(db, 'reviews'), {
+        bookingId: reviewingBooking.id,
+        engineerId: reviewingBooking.engineerId,
+        customerId: reviewingBooking.customerId,
+        rating: reviewForm.rating,
+        comment: reviewForm.comment,
+        createdAt: Date.now()
+      });
+      await updateDoc(doc(db, 'bookings', reviewingBooking.id), { reviewed: true });
+      setReviewingBooking(null);
+      setReviewForm({ rating: 5, comment: '' });
+      alert("Review submitted successfully!");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to submit review");
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -127,8 +155,71 @@ function Overview({ role, uid }: { role: string, uid: string }) {
                   <button onClick={() => updateStatus(b.id, 'completed')} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">Mark Completed</button>
                 </div>
               )}
+              {role === 'customer' && b.status === 'completed' && !b.reviewed && (
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={() => setReviewingBooking(b)} className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-lg transition-colors">Leave Review</button>
+                </div>
+              )}
+              {role === 'customer' && b.status === 'completed' && b.reviewed && (
+                <div className="flex gap-2 shrink-0">
+                  <span className="text-sm text-green-600 font-medium whitespace-nowrap">Reviewed ✓</span>
+                </div>
+              )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {reviewingBooking && (
+        <div className="fixed inset-0 bg-black/50 flex flex-col items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Leave a Review</h3>
+            <p className="text-gray-600 text-sm mb-4">How was your experience with this engineer?</p>
+            <form onSubmit={submitReview} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                <select 
+                  value={reviewForm.rating} 
+                  onChange={e => setReviewForm(prev => ({ ...prev, rating: Number(e.target.value) }))}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                >
+                  <option value="5">5 Stars - Excellent</option>
+                  <option value="4">4 Stars - Very Good</option>
+                  <option value="3">3 Stars - Good</option>
+                  <option value="2">2 Stars - Fair</option>
+                  <option value="1">1 Star - Poor</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Comment</label>
+                <textarea 
+                  required
+                  rows={4}
+                  placeholder="Share details of your experience..."
+                  value={reviewForm.comment}
+                  onChange={e => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                ></textarea>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button 
+                  type="button" 
+                  onClick={() => setReviewingBooking(null)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-50 font-medium rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={submittingReview}
+                  className="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg disabled:opacity-50"
+                >
+                  {submittingReview ? 'Submitting...' : 'Submit Review'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { MapPin, Briefcase, Mail, Star, Wrench, ShieldCheck, MessageCircle } from 'lucide-react';
 
@@ -10,6 +10,8 @@ export default function EngineerProfile() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [engineer, setEngineer] = useState<any>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [averageRating, setAverageRating] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,6 +22,20 @@ export default function EngineerProfile() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists() && docSnap.data().role === 'engineer') {
           setEngineer(docSnap.data());
+          
+          const q = query(collection(db, 'reviews'), where('engineerId', '==', id));
+          const reviewsSnap = await getDocs(q);
+          const reviewsData: any[] = [];
+          let totalRating = 0;
+          reviewsSnap.forEach(r => {
+            const data = r.data();
+            reviewsData.push({ id: r.id, ...data });
+            totalRating += data.rating;
+          });
+          setReviews(reviewsData.sort((a,b) => b.createdAt - a.createdAt));
+          if (reviewsData.length > 0) {
+            setAverageRating(totalRating / reviewsData.length);
+          }
         } else {
           setEngineer(null);
         }
@@ -86,7 +102,10 @@ export default function EngineerProfile() {
                 {engineer.displayName}
                 {engineer.isApproved !== false && <ShieldCheck className="text-green-500" size={20} title="Verified" />}
               </h1>
-              <p className="text-lg text-primary font-medium">{engineer.title || 'Professional Engineer'}</p>
+              <p className="text-lg text-primary font-medium flex items-center gap-2">
+                {engineer.title || 'Professional Engineer'} 
+                {averageRating > 0 && <span className="text-sm font-normal text-gray-500 ml-2 flex items-center"><Star className="text-yellow-400 mr-1" size={16} fill="currentColor" /> {averageRating.toFixed(1)} ({reviews.length} reviews)</span>}
+              </p>
             </div>
             <div className="flex gap-3 w-full sm:w-auto">
               <button 
@@ -123,6 +142,27 @@ export default function EngineerProfile() {
                     </span>
                   )) : <p className="text-gray-500 text-sm">No specific skills listed.</p>}
                 </div>
+              </section>
+
+              <section>
+                <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-2 mb-4">Reviews</h3>
+                {reviews.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No reviews yet.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {reviews.map(review => (
+                      <div key={review.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1 text-yellow-400">
+                            {[...Array(5)].map((_, i) => <Star key={i} size={14} fill={i < review.rating ? "currentColor" : "none"} />)}
+                          </div>
+                          <span className="text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-sm text-gray-700">{review.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </section>
             </div>
 
